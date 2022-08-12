@@ -6,6 +6,9 @@ int trigger_pin = 8;
 int echo_pin = 7;
 int max_dist_cm = 25; // max distance that the proximity sensor should read out to (length of the tilt)
 
+double servo_lower_lim_deg = 85;
+double servo_upper_lim_deg = 135;
+
 NewPing sonar(trigger_pin, echo_pin, max_dist_cm); // init an object for the proximity sensor (input)
 Servo myservo;  // create servo object to control a servo (output)
 
@@ -14,19 +17,43 @@ void setup() {
   Serial.begin(9600); // baud rate
   delay(50); 
   double cumulative_error = 0; // units are cm, this is needed for I-term in PID 
+  myservo.write(servo_lower_lim_deg);
 }
 
 
 void loop() {
-    double dist_cm = sonar.ping_cm();
+  double old_tilt_deg = servo_lower_lim_deg; // initalize the previous tilt degree
+  double dist_cm = sonar.ping_cm();
+  double delay_time_ms = 40;
   if (dist_cm > 0) {
     // the prox sensor sometimes throws random 0's that will mess us the controller
     // the if statement lets us ignore those
     double new_tilt_deg = pid(dist_cm);
-    myservo.write(new_tilt_deg);
+    update_servo(new_tilt_deg, old_tilt_deg, delay_time_ms);
+  } 
+  delay(delay_time_ms);
+}
+
+void update_servo(double new_tilt_deg, double old_tilt_deg, double delay_time_ms) {
+  // delay time is how to control the speed the servo will change angles
+  // I added this because the servo is changing too fast
+ 
+  // make the servo change from old to new degrees in increments, not all at once
+  if (new_tilt_deg > old_tilt_deg) {
+    for (double pos = old_tilt_deg; pos <= new_tilt_deg; pos += 1) {
+      // in steps of 1 degree
+      myservo.write(pos);             
+      delay(delay_time_ms);                       
+    }
   }
-  
-    delay(300); 
+
+  if (new_tilt_deg < old_tilt_deg) {
+    for (double pos = old_tilt_deg; pos >= new_tilt_deg; pos -= 1) {
+      // in steps of 1 degree
+      myservo.write(pos);             
+      delay(delay_time_ms);                       
+    }
+  }
 }
 
 
@@ -34,18 +61,17 @@ double pid(double distance_cm) {
   // input == distance from proximity sensor to ball
   // output == new angle to move the servo motor to get ball closer to setpoint
   
-  double Kp = 0.5;
+  double Kp = 1;
   double Ki = 0;
   
   // never let the ball get closer than 4 cm to the proximity sensor - else it isn't accurate
   
   
-  double setpoint_cm = 8;
+  double setpoint_cm = 10;
   Serial.print("setpoint_cm: ");
   Serial.println(setpoint_cm);
   
-  double servo_lower_lim_deg = 85;
-  double servo_upper_lim_deg = 135;
+
   
   double error = setpoint_cm - distance_cm;
   Serial.print("error_cm: ");
@@ -91,7 +117,7 @@ double pid(double distance_cm) {
     new_servo_angle = servo_lower_lim_deg;
   }
   
-  return new_servo_angle;
+  return new_servo_angle-10;
 }
 // 5,0,10,0,20 -> return 10 (5-0)/(10-0) * (20-0) + 0 = 10
 double pid_val_to_degree(double pid_value, double min_pid_val, double max_pid_val, double servo_lower_lim_deg, double servo_upper_lim_deg) {
