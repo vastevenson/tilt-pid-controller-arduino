@@ -50,7 +50,7 @@ double pid(double distance_cm) {
 	Serial.print(error);
 	
 	double min_distance_limit_cm = 4; // distance from ball to prox sensor
-	double max_distance_limit_cm = 18; 
+	double max_distance_limit_cm = 20; 
 	
 	// these limits are for P-only!
 	double min_pid_val = (setpoint_cm - max_distance_limit_cm) * Kp; // what is the largest error possible * Kp 
@@ -86,25 +86,4 @@ double pid(double distance_cm) {
 	}
 	
 	return new_servo_angle;
-}
-  int lower_lim_deg = 105;
-  int upper_lim_deg = 130;
-  
-  int delay_time_ms = 40;
-  
-  for (pos = lower_lim_deg; pos <= upper_lim_deg; pos += 1) { // goes from 0 degrees to 180 degrees
-    // in steps of 1 degree
-    myservo.write(pos);              // tell servo to go to position in variable 'pos'
-    int dist_cm = sonar.ping_cm();
-    Serial.println(dist_cm);
-    delay(delay_time_ms);                       // waits 15 ms for the servo to reach the position
-  }
-  delay(2000);
-  for (pos = upper_lim_deg; pos >= lower_lim_deg; pos -= 1) { // goes from 180 degrees to 0 degrees
-    myservo.write(pos);  
-    int dist_cm = sonar.ping_cm();
-    Serial.println(dist_cm);
-    delay(delay_time_ms);                       // waits 15 ms for the servo to reach the position
-  }
-  delay(2000);
 }
