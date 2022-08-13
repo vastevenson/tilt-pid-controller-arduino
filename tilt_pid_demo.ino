@@ -6,8 +6,9 @@ int trigger_pin = 8;
 int echo_pin = 7;
 int max_dist_cm = 25; // max distance that the proximity sensor should read out to (length of the tilt)
 
-double servo_lower_lim_deg = 85;
-double servo_upper_lim_deg = 135;
+double servo_lower_lim_deg = 95;
+double servo_upper_lim_deg = 120;
+double old_tilt_deg = servo_lower_lim_deg; // initalize the previous tilt degree
 
 NewPing sonar(trigger_pin, echo_pin, max_dist_cm); // init an object for the proximity sensor (input)
 Servo myservo;  // create servo object to control a servo (output)
@@ -22,16 +23,16 @@ void setup() {
 
 
 void loop() {
-  double old_tilt_deg = servo_lower_lim_deg; // initalize the previous tilt degree
+  
   double dist_cm = sonar.ping_cm();
-  double delay_time_ms = 40;
+  double delay_time_ms = 10;
   if (dist_cm > 0) {
     // the prox sensor sometimes throws random 0's that will mess us the controller
     // the if statement lets us ignore those
     double new_tilt_deg = pid(dist_cm);
     update_servo(new_tilt_deg, old_tilt_deg, delay_time_ms);
+    old_tilt_deg = new_tilt_deg;
   } 
-  delay(delay_time_ms);
 }
 
 void update_servo(double new_tilt_deg, double old_tilt_deg, double delay_time_ms) {
@@ -61,7 +62,7 @@ double pid(double distance_cm) {
   // input == distance from proximity sensor to ball
   // output == new angle to move the servo motor to get ball closer to setpoint
   
-  double Kp = 1;
+  double Kp = 5;
   double Ki = 0;
   
   // never let the ball get closer than 4 cm to the proximity sensor - else it isn't accurate
