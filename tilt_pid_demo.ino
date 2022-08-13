@@ -25,7 +25,7 @@ void setup() {
 void loop() {
   
   double dist_cm = sonar.ping_cm();
-  double delay_time_ms = 10;
+  double delay_time_ms = 5;
   if (dist_cm > 0) {
     // the prox sensor sometimes throws random 0's that will mess us the controller
     // the if statement lets us ignore those
@@ -62,7 +62,7 @@ double pid(double distance_cm) {
   // input == distance from proximity sensor to ball
   // output == new angle to move the servo motor to get ball closer to setpoint
   
-  double Kp = 5;
+  double Kp = 5 * 0.5 * 0.5 * 0.5 * 0.1;
   double Ki = 0;
   
   // never let the ball get closer than 4 cm to the proximity sensor - else it isn't accurate
