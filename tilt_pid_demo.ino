@@ -62,7 +62,7 @@ double pid(double distance_cm) {
   // input == distance from proximity sensor to ball
   // output == new angle to move the servo motor to get ball closer to setpoint
   
-  double Kp = 5 * 0.5 * 0.5 * 0.5 * 0.1;
+  double Kp = 2;
   double Ki = 0;
   
   // never let the ball get closer than 4 cm to the proximity sensor - else it isn't accurate
@@ -83,19 +83,19 @@ double pid(double distance_cm) {
   
   // these limits are for P-only!
   double min_pid_val = (setpoint_cm - max_distance_limit_cm) * Kp; // what is the largest error possible * Kp 
-  Serial.print("min_pid_val: ");
-  Serial.println(min_pid_val);
+//  Serial.print("min_pid_val: ");
+//  Serial.println(min_pid_val);
   // smallest_possible_error == ball is as far from proximity sensor as possible - reading 25 cm
   // error == 10 - 18 = -8 cm
   // largest_possible_error == ball is as close to proximity sensor as possible - reading 4 cm
   // error == 10 - 4 = 6 cm
   double max_pid_val = (setpoint_cm - min_distance_limit_cm) * Kp; // what is the smallest/most negative error possible * Kp
-  Serial.print("max_pid_val: ");
-  Serial.println(max_pid_val);
+//  Serial.print("max_pid_val: ");
+//  Serial.println(max_pid_val);
   
   double p_value = error * Kp;
-  Serial.print("p_value: ");
-  Serial.println(p_value);
+//  Serial.print("p_value: ");
+//  Serial.println(p_value);
   
   // double i_value = cumulative_error * Ki;
   // cumulative_error += error;
@@ -105,7 +105,9 @@ double pid(double distance_cm) {
   Serial.println(pid_value);
   
   // map the pid value to a new angle for the servo to go to
-  double new_servo_angle = pid_val_to_degree(pid_value, min_pid_val, max_pid_val, servo_lower_lim_deg, servo_upper_lim_deg);
+//  double new_servo_angle = pid_val_to_degree(pid_value, min_pid_val, max_pid_val, servo_lower_lim_deg, servo_upper_lim_deg);
+  double servo_range = servo_upper_lim_deg - servo_lower_lim_deg;
+  double new_servo_angle = map(pid_value, -1 * servo_range, servo_range, servo_lower_lim_deg, servo_upper_lim_deg);
   Serial.print("new_servo_angle: ");
   Serial.println(new_servo_angle);
   Serial.println();
