@@ -6,18 +6,23 @@ int trigger_pin = 8;
 int echo_pin = 7;
 int max_dist_cm = 25; // max distance that the proximity sensor should read out to (length of the tilt)
 
-double servo_lower_lim_deg = 95;
+double servo_lower_lim_deg = 80;
 double servo_upper_lim_deg = 120;
 double old_tilt_deg = servo_lower_lim_deg; // initalize the previous tilt degree
+double cumulative_error = 0; // units are cm, this is needed for I-term in PID 
+double previous_error = 0; // this is for D term in PID
+
+double Kp = 1.5;
+double Ki = 0.05;
+double Kd = 0.1;
 
 NewPing sonar(trigger_pin, echo_pin, max_dist_cm); // init an object for the proximity sensor (input)
 Servo myservo;  // create servo object to control a servo (output)
-
 void setup() {
   myservo.attach(servo_pin); 
   Serial.begin(9600); // baud rate
   delay(50); 
-  double cumulative_error = 0; // units are cm, this is needed for I-term in PID 
+  
   myservo.write(servo_lower_lim_deg);
 }
 
@@ -62,21 +67,22 @@ double pid(double distance_cm) {
   // input == distance from proximity sensor to ball
   // output == new angle to move the servo motor to get ball closer to setpoint
   
-  double Kp = 2;
-  double Ki = 0;
+
   
   // never let the ball get closer than 4 cm to the proximity sensor - else it isn't accurate
   
   
   double setpoint_cm = 10;
-  Serial.print("setpoint_cm: ");
-  Serial.println(setpoint_cm);
+  Serial.print("setpoint_cm:");
+  Serial.print(setpoint_cm);
+  Serial.print(","); 
   
 
   
   double error = setpoint_cm - distance_cm;
-  Serial.print("error_cm: ");
-  Serial.println(error);
+  Serial.print("error_cm:");
+  Serial.print(error);
+  Serial.print(","); 
   
   double min_distance_limit_cm = 4; // distance from ball to prox sensor
   double max_distance_limit_cm = 20; 
@@ -97,20 +103,23 @@ double pid(double distance_cm) {
 //  Serial.print("p_value: ");
 //  Serial.println(p_value);
   
-  // double i_value = cumulative_error * Ki;
-  // cumulative_error += error;
+  double i_value = cumulative_error * Ki;
+  double d_value = (error - previous_error) * Kd;
   
-  double pid_value = p_value;
-  Serial.print("pid_value: ");
+  double pid_value = p_value + i_value + d_value;
+  
+  Serial.print("pid_value:");
   Serial.println(pid_value);
-  
+
+  cumulative_error += error; // note that error can be + or -, this i term seeks to eliminate the offset when the P-only controller stalls
+  previous_error = error; // for the next cycle, remember what this cycle's error was
   // map the pid value to a new angle for the servo to go to
 //  double new_servo_angle = pid_val_to_degree(pid_value, min_pid_val, max_pid_val, servo_lower_lim_deg, servo_upper_lim_deg);
   double servo_range = servo_upper_lim_deg - servo_lower_lim_deg;
   double new_servo_angle = map(pid_value, -1 * servo_range, servo_range, servo_lower_lim_deg, servo_upper_lim_deg);
-  Serial.print("new_servo_angle: ");
-  Serial.println(new_servo_angle);
-  Serial.println();
+//  Serial.print("new_servo_angle: ");
+//  Serial.println(new_servo_angle);
+//  Serial.println();
   // make sure that any curveballs don't make the servo try to go to an angle outside of its operating range
   if (new_servo_angle > servo_upper_lim_deg) {
     new_servo_angle = servo_upper_lim_deg;
@@ -120,7 +129,7 @@ double pid(double distance_cm) {
     new_servo_angle = servo_lower_lim_deg;
   }
   
-  return new_servo_angle-10;
+  return new_servo_angle;
 }
 // 5,0,10,0,20 -> return 10 (5-0)/(10-0) * (20-0) + 0 = 10
 double pid_val_to_degree(double pid_value, double min_pid_val, double max_pid_val, double servo_lower_lim_deg, double servo_upper_lim_deg) {
